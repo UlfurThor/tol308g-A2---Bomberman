@@ -6,16 +6,13 @@ var entityManager = {
 
   // PRIVATE DATA
 
-  _game: [],
   _start: [],
   _player: [],
   _bomb: [],
   _pickup: [],
   _enemy: [],
 
-  _selection: false,
   _startGame: false,
-  _flag: false,
 
   // PRIVATE METHODS
 
@@ -23,12 +20,11 @@ var entityManager = {
     this._start.push(new Start(descr));
   },
 
-  generateGame: function(descr) {
-    this._game.push(new Game(descr));
-  },
-
-  generatePlayer: function (descr) {
-    this._player.push(new Player(descr));
+  generatePlayer: function (cx, cy) {
+    this._player.push(new Player({
+      cx: cx,
+      cy: cy
+    }));
   },
 
   generateEnemy: function (descr) {
@@ -79,14 +75,13 @@ var entityManager = {
 
   init: function () {
     this.generateStart();
-    this.generateGame();
-    this.generatePlayer();
+    this.generatePlayer(100, 100);
     this.generateEnemy();
   },
 
   gameStart: function () {
     this._startGame = !this._startGame;
-    g_sounds.playSelect2();
+    util.playSelect2();
   },
 
   update: function (du) {
@@ -111,13 +106,9 @@ var entityManager = {
   },
 
   render: function (ctx) {
-    // Render start menu entities
+    // Render start entities
     this._start[0].render(ctx);
 
-    // Render game menu entities
-    this._game[0].render(ctx);
-
-      if(!this._paused){ 
       // Render player entities
       for (var i = 0; i < this._player.length; i++) {
         this._player[i].render(ctx);
@@ -133,7 +124,6 @@ var entityManager = {
         var bomb = this._bomb[i];
         bomb.render(ctx);
       }
-    }
   },
 
 };
