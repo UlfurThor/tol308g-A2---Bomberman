@@ -2,6 +2,8 @@
 
 "use strict";
 
+var g_scale = 1;
+
 // We use generic contructor which accepts an arbitrary descriptor object 
 // So it's possible to create more players if needed
 function Player(descr) {
@@ -34,6 +36,15 @@ Player.prototype.KEY_DOWN = 'S'.charCodeAt(0);
 // Drop bomb key
 Player.prototype.KEY_DROP_BOMB = ' '.charCodeAt();
 
+//Interact with gate
+Player.prototype.KEY_USE = 'E'.charCodeAt(0);
+
+ // Select answer
+Player.prototype.KEY_ONE = '1'.charCodeAt(0);
+Player.prototype.KEY_TWO = '2'.charCodeAt(0);
+Player.prototype.KEY_THREE = '3'.charCodeAt(0);
+Player.prototype.KEY_FOUR = '4'.charCodeAt(0);
+
 // player step
 Player.prototype.step = 4;
 
@@ -41,8 +52,14 @@ Player.prototype.step = 4;
 Player.prototype.cx;
 Player.prototype.cy;
 
+ // Player explosion lifespan
+Player.prototype.ctdTimer = (500 / NOMINAL_UPDATE_INTERVAL);
+Player.prototype.playerExplTime = (1500 / NOMINAL_UPDATE_INTERVAL);
+Player.prototype.explTimer = Player.prototype.playerExplTime;
+Player.prototype.isDying = false;
+
 // Sound
-Player.prototype.bombTime = new Audio("Sound effects/bombtime.mp3");
+//Player.prototype.bombTime = new Audio("Sound effects/bombtime.mp3");
 
 // Interval for steps when player walks
 // The sprite is changed every 150 ms so it appears he is walking
@@ -75,10 +92,35 @@ Player.prototype.update = function (du) {
       var placeInGrid = g_map.tileMapLocation(this.cx, this.cy);
       var findCenter = g_map.tileCenter(placeInGrid.row, placeInGrid.column);
       entityManager.generateBomb(findCenter.x, findCenter.y, 1, this);
-      this.bombTime.play();
+      g_sounds.playFuse();
     }
   }
-  
+
+  // Handle death
+  if(this.isDying) {
+    this.ctdTimer -= du;
+
+   if (this.ctdTimer < 0) {
+    this.explTimer -= du;
+    this.sprite = g_sprites[this.nextSprite];
+
+    this.nextSprite = g_playerExplOffset + (Math.floor(g_playerExplSprites -
+        this.explTimer / this.playerExplTime * g_playerExplSprites) %
+      g_playerExplSprites);
+  }
+
+   if (this.explTimer <= 0) {
+    this.kill();
+    this.isDying = false;
+  }
+
+   //this.newLife();
+  }
+
+   if(eatKey(this.KEY_USE)){
+    this.checkGate(this.cx,this.cy);
+  }
+
   // Let the enemy know of my position
   Enemy.prototype.setPlayerX(this.cx);
   Enemy.prototype.setPlayerY(this.cy);
@@ -209,33 +251,8 @@ Player.prototype.mapCollision = function () {
 
 };
 
-
-
-// Player collision with explosion
-
-// Player explosion lifespan
-Player.prototype.ctdTimer = (500 / NOMINAL_UPDATE_INTERVAL);
-Player.prototype.playerExplTime = (1500 / NOMINAL_UPDATE_INTERVAL);
-Player.prototype.explTimer = Player.prototype.playerExplTime;
-
-Player.prototype.takeExplosionHit = function (du) {
-
-  this.ctdTimer -= du;
-
-  if (this.ctdTimer < 0) {
-    this.explTimer -= du;
-    this.sprite = g_sprites[this.nextSprite];
-
-    this.nextSprite = g_playerExplOffset + (Math.floor(g_playerExplSprites -
-        this.explTimer / this.playerExplTime * g_playerExplSprites) %
-      g_playerExplSprites);
-  }
-
-  if (this.explTimer <= 0) {
-    this.kill();
-  }
-
-  //this.newLife();
+Player.prototype.takeExplosionHit = function () {
+  this.isDying = true;
 
 };
 
@@ -248,7 +265,6 @@ Player.prototype.render = function (ctx) {
 
   this.sprite.drawCentredAt(ctx, this.cx, this.cy);
 };
-
 
 
 // controles the number
@@ -299,3 +315,38 @@ Player.prototype.incrMaxBombCount = function (incrAmount) {
   this._maxBombCount = this._maxBombCount + incrAmount;
   return this._maxBombCount;
 };
+
+Player.prototype.getFourDirections = function (x,y) {
+  var tileUP = g_map.mapTiles[x][y-1];
+  var tileLEFT = g_map.mapTiles[x-1][y];
+  var tileRIGHT = g_map.mapTiles[x+1][y];
+  var tileDOWN = g_map.mapTiles[x][y+1];
+  return {
+    up: tileUP,
+    down: tileDOWN,
+    left: tileLEFT,
+    right: tileRIGHT,
+  }
+};
+
+
+ Player.prototype.checkGate = function (x,y) {
+  var ps = g_map.tileMapLocation(x,y);
+  var dir = this.getFourDirections(ps.row,ps.column);
+  //check if interactable
+   if(dir.up === 3){
+     g_map.mapTiles[ps.row][ps.column-1] = 0;
+  }
+   if(dir.down === 3){
+    g_map.mapTiles[ps.row][ps.column+1] = 0;
+  }
+     
+  if(dir.left === 3) {
+    g_map.mapTiles[ps.row-1][ps.column] = 0;
+  }
+     
+  if(dir.right === 3) {
+    g_map.mapTiles[ps.row+1][ps.column] = 0;
+    g_sounds.playDamage();
+  }
+  
