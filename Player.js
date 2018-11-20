@@ -350,3 +350,4 @@ Player.prototype.getFourDirections = function (x,y) {
     g_sounds.playDamage();
   }
   
+ };

@@ -118,8 +118,7 @@ var entityManager = {
 
     // Render game menu entities
     this._game[0].render(ctx);
-    if(!this._paused){ 
-
+   
     if(!this._paused){   
       // Render player entities
       for (var i = 0; i < this._player.length; i++) {

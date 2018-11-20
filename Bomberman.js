@@ -161,7 +161,7 @@ function requestPreloads() {
         // game over screen
         25 : "assets/GameOver.png",
         // game win screen
-        26 : "assets/GameWin.png"
+        26 : "assets/GameWin.png",
 
         // Enemy explosion sprites
         27 : "assets/enemyexplode.png"
