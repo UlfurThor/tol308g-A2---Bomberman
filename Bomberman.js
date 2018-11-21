@@ -6,6 +6,9 @@ var g_winGame = false;
 
 var g_scale = 1;
 
+// Player starts with 3 lives
+var g_lives = 3;
+
 
 var KEY_PLUS = keyCode('j');
 var KEY_MINUS = keyCode('k');
@@ -163,8 +166,13 @@ function requestPreloads() {
         // game win screen
         26 : "assets/GameWin.png",
 
+        // Powerups
+        27 : "assets/extraLife.png",
+        28 : "assets/extraBomb.png",
+        29 : "assets/Speed.png",
+
         // Enemy explosion sprites
-        27 : "assets/enemyexplode.png"
+        30 : "assets/enemyexplode.png"
 
     };
 
@@ -178,7 +186,7 @@ function requestPreloads() {
  * Explosion sprites: 10 - 32
  * Player Explosion sprites: 33 - 42
  * Start menu sprites: 43 - 44
- * Enemy explosion sprites: 58 - 64
+ * Enemy explosion sprites: 60 - 67
  */
 var g_sprites = [];
 var g_playerSprites = 8;
@@ -187,8 +195,8 @@ var g_explOffset = g_playerSprites + g_enemySprites + 1;
 var g_explSprites = 22;
 var g_playerExplOffset = g_explOffset + g_explSprites;
 var g_playerExplSprites = 9;
-var g_enemyExplOffset = 51;
-var g_enemyExplSprites = 6;
+var g_enemyExplOffset = 60;
+var g_enemyExplSprites = 7;
 
 
 function preloadDone() {
@@ -278,6 +286,11 @@ function preloadDone() {
     //Game win sprite
     g_sprites[57] = new Sprite(g_images[26]);
 
+    // Powerups
+    g_sprites[58] = new Sprite(g_images[27]);
+    g_sprites[59] = new Sprite(g_images[28]);
+    g_sprites[60] = new Sprite(g_images[29]);
+
 
     // Enemy explosion sprites
     var enemyCelWidth = 32;
@@ -291,7 +304,7 @@ function preloadDone() {
         for (var j = 0; j < enemyNumCols; ++j) {
             enemyExplSprite = new AnimatingSprite(j * enemyCelWidth, 
                 i * enemyCelHeight, 
-                enemyCelWidth, enemyCelHeight, g_images[27])
+                enemyCelWidth, enemyCelHeight, g_images[30])
             g_sprites.push(enemyExplSprite);
         }
     }

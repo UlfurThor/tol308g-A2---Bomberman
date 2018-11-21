@@ -26,6 +26,11 @@ Enemy.prototype = new Entity();
 Enemy.prototype.cx = 100;
 Enemy.prototype.cy = 860;
 
+Enemy.prototype.ctdTimer = (500 / NOMINAL_UPDATE_INTERVAL);
+Enemy.prototype.enemyExplTime = (1500 / NOMINAL_UPDATE_INTERVAL);
+Enemy.prototype.explTimer = Enemy.prototype.enemyExplTime;
+Enemy.prototype.isDying = false;
+
 Enemy.prototype.update = function (du) {
     // Unregister
     spatialManager.unregister(this);
@@ -34,49 +39,63 @@ Enemy.prototype.update = function (du) {
     if (this._isDeadNow) {
       return entityManager.KILL_ME_NOW;
     }
-
-    // Handle collision with player 
-    var _hitEntities = this.findHitEntities(this.range);
-    if (_hitEntities != []) {
-      //todo add findHitEntities
-      for (var i = 0; i < _hitEntities.length; i++) {
-        var hitEntity = _hitEntities[i];
-        var canTakeHit = hitEntity.takeExplosionHit;
-        if (canTakeHit) {
-          canTakeHit.call(hitEntity, du)
-        }
-      }
-    }
   
     // Movement stuff
     this.path(du);
+
+     // Handle death
+    if(this.isDying) {
+        this.xVel = 0;
+        this.yVel = 0;
+        this.ctdTimer -= du;
+
+        if (this.ctdTimer < 0) {
+            this.explTimer -= du;
+            this.sprite = g_sprites[this.nextSprite];
+
+            this.nextSprite = g_enemyExplOffset + (Math.floor(g_enemyExplSprites -
+                this.explTimer / this.enemyExplTime * g_enemyExplSprites) %
+                g_enemyExplSprites);
+        }
+
+        if (this.explTimer <= 0) {
+            this.kill();
+            //this.isDying = false;
+        }
+    }
     
     // (Re-) register
     spatialManager.register(this);
 };
 
 // Initial velocity
-Enemy.prototype.xVel = 3;
-Enemy.prototype.yVel = 3;
+Enemy.prototype.xVel = 4;
+Enemy.prototype.yVel = 4;
 
 // Player position
 Enemy.prototype.playerX;
 Enemy.prototype.playerY;
 
 // Interval stuff for direction changes in path
-var verticalSwitchInterval = setInterval(setStep, 4000);
+var verticalSwitchInterval = setInterval(setStep, 1100);
 var verticalSwitch;
 
-var horizontalSwitchInterval = setInterval(setHorizontalStep, 8000);
+var horizontalSwitchInterval = setInterval(setHorizontalStep, 2200);
 var horizontalSwitch;
+
+var ultimateSwitchInterval = setInterval(setUltimateStep, 4400);
+var ultimateSwitch;
 
 function setStep() {
     verticalSwitch = verticalSwitch == true ? false : true;
-    horizontalSwitch = horizontalSwitch == true ? false : true;
 } 
 
 function setHorizontalStep() {
     horizontalSwitch = horizontalSwitch == true ? false : true;
+}
+
+function setUltimateStep() {
+    ultimateSwitch = ultimateSwitch == true ? false : true;
 }
 
 // Set player position
@@ -98,31 +117,75 @@ Enemy.prototype.path = function (du) {
     // To-do: Stop if collides with player 
     // Blow up if collides with bombs
 
-    if (horizontalSwitch) {
-        if (verticalSwitch) {
-            this.cx -= this.xVel*du;
-        } else if (!verticalSwitch) {
-            this.cx += this.xVel*du;
-        } 
-        if (this.mapCollision()) {
+    if (ultimateSwitch) {
+        if (horizontalSwitch) {
             if (verticalSwitch) {
-                this.cx += this.xVel*du;
-            } else if (!verticalSwitch) {
+                // Left
                 this.cx -= this.xVel*du;
+            } else if (!verticalSwitch) {
+                // Right
+                this.cx += this.xVel*du;
+            } 
+            if (this.mapCollision()) {
+                // On map collision - go back
+                if (verticalSwitch) {
+                    this.cx += this.xVel*du;
+                } else if (!verticalSwitch) {
+                    this.cx -= this.xVel*du;
+                }
+            }
+
+        } else if (!horizontalSwitch) {
+            if (verticalSwitch) {
+                // Up
+                this.cy -= this.yVel*du;
+            } else if (!verticalSwitch) {
+                // Down
+                this.cy += this.yVel*du;
+            } 
+            if (this.mapCollision()) {
+                // On map collision - go back
+                if (verticalSwitch) {
+                    this.cy += this.yVel*du;
+                } else if (!verticalSwitch) {
+                    this.cy -= this.yVel*du;
+                }
             }
         }
 
-    } else if (!horizontalSwitch) {
-        if (verticalSwitch) {
-            this.cy -= this.yVel*du;
-        } else if (!verticalSwitch) {
-            this.cy += this.yVel*du;
-        } 
-        if (this.mapCollision()) {
+    } else if (!ultimateSwitch) {
+        if (horizontalSwitch) {
             if (verticalSwitch) {
+                // Down
                 this.cy += this.yVel*du;
             } else if (!verticalSwitch) {
+                // Up
                 this.cy -= this.yVel*du;
+            } 
+            if (this.mapCollision()) {
+                // On map collision - go back
+                if (verticalSwitch) {
+                    this.cy -= this.yVel*du;
+                } else if (!verticalSwitch) {
+                    this.cy += this.yVel*du;
+                }
+            }
+
+        } else if (!horizontalSwitch) {
+            if (verticalSwitch) {
+                // Right
+                this.cx += this.xVel*du;
+            } else if (!verticalSwitch) {
+                // Left
+                this.cx -= this.xVel*du;
+            } 
+            if (this.mapCollision()) {
+                // On map collision - go back
+                if (verticalSwitch) {
+                    this.cx -= this.xVel*du;
+                } else if (!verticalSwitch) {
+                    this.cx += this.xVel*du;
+                }
             }
         }
     }
@@ -234,31 +297,11 @@ Enemy.prototype.getRadius = function () {
 };
 
 // Enemy collision with explosion
-
-// Enemy explosion lifespan
-Enemy.prototype.ctdTimer = (500 / NOMINAL_UPDATE_INTERVAL);
-Enemy.prototype.enemyExplTime = (1500 / NOMINAL_UPDATE_INTERVAL);
-Enemy.prototype.explTimer = Enemy.prototype.enemyExplTime;
-
-Enemy.prototype.takeExplosionHit = function (du) {
+Enemy.prototype.takeExplosionHit = function () {
+    this.isDying = true;
     console.log("enemy killed");
-    this.ctdTimer -= du;
-
-    if (this.ctdTimer < 0) {
-      this.explTimer -= du;
-      this.sprite = g_sprites[this.nextSprite];
-  
-      this.nextSprite = g_enemyExplOffset + (Math.floor(g_enemyExplSprites -
-          this.explTimer / this.enemyExplTime * g_enemyExplSprites) %
-        g_enemyExplSprites);
-    }
-  
-    if (this.explTimer <= 0) {
-      this.kill();
-    }
 };
 
 Enemy.prototype.render = function (ctx) {
-
     this.sprite.drawCentredAt(ctx, this.cx, this.cy);
 };

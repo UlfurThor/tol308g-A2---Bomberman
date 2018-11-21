@@ -98,6 +98,7 @@ Player.prototype.update = function (du) {
 
   // Handle death
   if(this.isDying) {
+    this.step = 0;
     this.ctdTimer -= du;
 
    if (this.ctdTimer < 0) {
@@ -110,11 +111,11 @@ Player.prototype.update = function (du) {
   }
 
    if (this.explTimer <= 0) {
-    this.kill();
-    this.isDying = false;
-  }
+      this.kill();
+      this.newLife();
+      this.isDying = false;
+    }
 
-   //this.newLife();
   }
 
    if(eatKey(this.KEY_USE)){
@@ -253,13 +254,18 @@ Player.prototype.mapCollision = function () {
 
 Player.prototype.takeExplosionHit = function () {
   this.isDying = true;
-
+  g_lives -= 1;
 };
 
 // Resets the player and starts a new life
 Player.prototype.newLife = function () {
-
-}
+  if (g_lives >= 0) {
+    entityManager.generatePlayer(this.cx, this.cy);
+    console.log("Now there are " + g_lives + " lives left");
+  } else {
+    console.log("Game over");
+  }
+};
 
 Player.prototype.render = function (ctx) {
 
@@ -349,5 +355,5 @@ Player.prototype.getFourDirections = function (x,y) {
     g_map.mapTiles[ps.row+1][ps.column] = 0;
     g_sounds.playDamage();
   }
-  
+
  };
